@@ -1,0 +1,10 @@
+{
+  "id": "biblehub-auto-linker",
+  "name": "BibleHub Auto Linker",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Automatically converts Bible references into external Markdown links to BibleHub.",
+  "author": "",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
