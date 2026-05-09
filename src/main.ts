@@ -12,7 +12,9 @@ import {
   BibleHubAutoLinkerSettings,
   DEFAULT_SETTINGS,
   convertBibleReferences,
-  convertTrailingReference
+  convertPastedText,
+  convertTrailingReference,
+  isRangeProtectedInMarkdown
 } from "./linker";
 
 export default class BibleHubAutoLinkerPlugin extends Plugin {
@@ -29,6 +31,10 @@ export default class BibleHubAutoLinkerPlugin extends Plugin {
         this.handleEditorChange(editor);
       })
     );
+
+    this.registerDomEvent(document, "paste", (event) => {
+      this.handlePaste(event);
+    });
 
     this.addCommand({
       id: "convert-bible-references-current-note",
@@ -92,6 +98,53 @@ export default class BibleHubAutoLinkerPlugin extends Plugin {
     } finally {
       this.isApplyingChange = false;
     }
+  }
+
+  private handlePaste(event: ClipboardEvent): void {
+    if (this.isApplyingChange || !this.settings.enableAutoLink) {
+      return;
+    }
+
+    const pastedText = event.clipboardData?.getData("text/plain");
+    if (!pastedText) {
+      return;
+    }
+
+    const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (!markdownView) {
+      return;
+    }
+
+    const editor = markdownView.editor;
+    const pasteStart = editor.posToOffset(editor.getCursor("from"));
+    const normalizedPaste = pastedText.replace(/\r\n?/g, "\n");
+
+    window.setTimeout(() => {
+      if (this.isApplyingChange) {
+        return;
+      }
+
+      const pasteEnd = pasteStart + normalizedPaste.length;
+      const documentText = editor.getValue();
+      if (pasteEnd > documentText.length || isRangeProtectedInMarkdown(documentText, pasteStart, pasteEnd)) {
+        return;
+      }
+
+      const from = editor.offsetToPos(pasteStart);
+      const to = editor.offsetToPos(pasteEnd);
+      const insertedText = editor.getRange(from, to);
+      const converted = convertPastedText(insertedText, this.settings);
+      if (converted === insertedText) {
+        return;
+      }
+
+      this.isApplyingChange = true;
+      try {
+        editor.replaceRange(converted, from, to);
+      } finally {
+        this.isApplyingChange = false;
+      }
+    }, 0);
   }
 }
 

@@ -143,6 +143,18 @@ export function convertBibleReferences(text: string, settings: BibleHubAutoLinke
   return result + text.slice(lastIndex);
 }
 
+export function convertPastedText(text: string, settings: BibleHubAutoLinkerSettings): string {
+  if (!settings.enableAutoLink) {
+    return text;
+  }
+
+  return convertBibleReferences(text, settings);
+}
+
+export function isRangeProtectedInMarkdown(text: string, from: number, to: number): boolean {
+  return isProtected(from, to, collectProtectedRanges(text));
+}
+
 export function convertTrailingReference(
   textBeforeCursor: string,
   settings: BibleHubAutoLinkerSettings

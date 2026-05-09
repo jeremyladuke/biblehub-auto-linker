@@ -131,6 +131,15 @@ function convertBibleReferences(text, settings) {
   }
   return result + text.slice(lastIndex);
 }
+function convertPastedText(text, settings) {
+  if (!settings.enableAutoLink) {
+    return text;
+  }
+  return convertBibleReferences(text, settings);
+}
+function isRangeProtectedInMarkdown(text, from, to) {
+  return isProtected(from, to, collectProtectedRanges(text));
+}
 function convertTrailingReference(textBeforeCursor, settings) {
   if (!settings.enableAutoLink || textBeforeCursor.length === 0) {
     return null;
@@ -278,6 +287,9 @@ var BibleHubAutoLinkerPlugin = class extends import_obsidian.Plugin {
         this.handleEditorChange(editor);
       })
     );
+    this.registerDomEvent(document, "paste", (event) => {
+      this.handlePaste(event);
+    });
     this.addCommand({
       id: "convert-bible-references-current-note",
       name: "Convert Bible references in current note",
@@ -334,6 +346,46 @@ var BibleHubAutoLinkerPlugin = class extends import_obsidian.Plugin {
     } finally {
       this.isApplyingChange = false;
     }
+  }
+  handlePaste(event) {
+    var _a;
+    if (this.isApplyingChange || !this.settings.enableAutoLink) {
+      return;
+    }
+    const pastedText = (_a = event.clipboardData) == null ? void 0 : _a.getData("text/plain");
+    if (!pastedText) {
+      return;
+    }
+    const markdownView = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+    if (!markdownView) {
+      return;
+    }
+    const editor = markdownView.editor;
+    const pasteStart = editor.posToOffset(editor.getCursor("from"));
+    const normalizedPaste = pastedText.replace(/\r\n?/g, "\n");
+    window.setTimeout(() => {
+      if (this.isApplyingChange) {
+        return;
+      }
+      const pasteEnd = pasteStart + normalizedPaste.length;
+      const documentText = editor.getValue();
+      if (pasteEnd > documentText.length || isRangeProtectedInMarkdown(documentText, pasteStart, pasteEnd)) {
+        return;
+      }
+      const from = editor.offsetToPos(pasteStart);
+      const to = editor.offsetToPos(pasteEnd);
+      const insertedText = editor.getRange(from, to);
+      const converted = convertPastedText(insertedText, this.settings);
+      if (converted === insertedText) {
+        return;
+      }
+      this.isApplyingChange = true;
+      try {
+        editor.replaceRange(converted, from, to);
+      } finally {
+        this.isApplyingChange = false;
+      }
+    }, 0);
   }
 };
 var BibleHubAutoLinkerSettingTab = class extends import_obsidian.PluginSettingTab {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildBibleHubUrl,
   convertBibleReferences,
+  convertPastedText,
   convertTrailingReference,
   DEFAULT_SETTINGS
 } from "../src/linker";
@@ -75,6 +76,14 @@ describe("document conversion", () => {
         enableAutoLink: false
       })
     ).toBe("[John 3:16](https://biblehub.com/john/3-16.htm)");
+  });
+});
+
+describe("paste conversion", () => {
+  it("converts pasted references even without a trailing delimiter", () => {
+    expect(convertPastedText("John 3:16", DEFAULT_SETTINGS)).toBe(
+      "[John 3:16](https://biblehub.com/john/3-16.htm)"
+    );
   });
 });
 
