@@ -43,6 +43,12 @@ describe("document conversion", () => {
     );
   });
 
+  it("links verse ranges written with an en dash to the first verse", () => {
+    expect(convertBibleReferences("Foundation: 1 Corinthians 3:11–15.", DEFAULT_SETTINGS)).toBe(
+      "Foundation: [1 Corinthians 3:11–15](https://biblehub.com/1_corinthians/3-11.htm)."
+    );
+  });
+
   it("does not convert existing markdown links", () => {
     const text = "[John 3:16](https://biblehub.com/john/3-16.htm) and Romans 8:1";
     expect(convertBibleReferences(text, DEFAULT_SETTINGS)).toBe(

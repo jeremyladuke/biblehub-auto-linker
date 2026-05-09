@@ -1,6 +1,6 @@
 {
   "name": "biblehub-auto-linker",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Obsidian plugin that automatically converts Bible references into BibleHub Markdown links.",
   "main": "main.js",
   "scripts": {

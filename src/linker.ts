@@ -233,7 +233,7 @@ function createReferenceRegex(settings: BibleHubAutoLinkerSettings): RegExp {
     .sort((a, b) => b.length - a.length)
     .map(aliasToPattern);
 
-  return new RegExp(`(^|[^\\w/])(${aliases.join("|")})\\s+(\\d{1,3}):(\\d{1,3})(?:\\s*-\\s*\\d{1,3})?`, "gi");
+  return new RegExp(`(^|[^\\w/])(${aliases.join("|")})\\s+(\\d{1,3}):(\\d{1,3})(?:\\s*[-–—]\\s*\\d{1,3})?`, "gi");
 }
 
 function aliasToPattern(alias: string): string {

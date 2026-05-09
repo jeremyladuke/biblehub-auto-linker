@@ -200,7 +200,7 @@ function createReferenceRegex(settings) {
     }
     return names;
   }).sort((a, b) => b.length - a.length).map(aliasToPattern);
-  return new RegExp(`(^|[^\\w/])(${aliases.join("|")})\\s+(\\d{1,3}):(\\d{1,3})(?:\\s*-\\s*\\d{1,3})?`, "gi");
+  return new RegExp(`(^|[^\\w/])(${aliases.join("|")})\\s+(\\d{1,3}):(\\d{1,3})(?:\\s*[-\u2013\u2014]\\s*\\d{1,3})?`, "gi");
 }
 function aliasToPattern(alias) {
   return escapeRegex(alias).replace(/\\ /g, "\\s+");
