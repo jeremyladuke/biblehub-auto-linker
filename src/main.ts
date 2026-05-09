@@ -2,6 +2,7 @@ import {
   App,
   Editor,
   MarkdownView,
+  Menu,
   Notice,
   Plugin,
   PluginSettingTab,
@@ -13,6 +14,7 @@ import {
   DEFAULT_SETTINGS,
   convertBibleReferences,
   convertPastedText,
+  convertReferenceAtOffset,
   convertTrailingReference,
   isRangeProtectedInMarkdown
 } from "./linker";
@@ -29,6 +31,12 @@ export default class BibleHubAutoLinkerPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("editor-change", (editor) => {
         this.handleEditorChange(editor);
+      })
+    );
+
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor) => {
+        this.handleEditorMenu(menu, editor);
       })
     );
 
@@ -98,6 +106,44 @@ export default class BibleHubAutoLinkerPlugin extends Plugin {
     } finally {
       this.isApplyingChange = false;
     }
+  }
+
+  private handleEditorMenu(menu: Menu, editor: Editor): void {
+    menu.addItem((item) => {
+      item
+        .setTitle("Link Bible reference")
+        .setIcon("link")
+        .onClick(() => {
+          this.convertContextReference(editor);
+        });
+    });
+  }
+
+  private convertContextReference(editor: Editor): void {
+    const selectedText = editor.getSelection();
+    if (selectedText) {
+      const converted = convertBibleReferences(selectedText, this.settings);
+      if (converted !== selectedText) {
+        editor.replaceSelection(converted);
+      } else {
+        new Notice("No unlinked Bible reference found in selection.");
+      }
+      return;
+    }
+
+    const documentText = editor.getValue();
+    const offset = editor.posToOffset(editor.getCursor());
+    const conversion = convertReferenceAtOffset(documentText, offset, this.settings);
+    if (!conversion) {
+      new Notice("No unlinked Bible reference found near the cursor.");
+      return;
+    }
+
+    editor.replaceRange(
+      conversion.replacement,
+      editor.offsetToPos(conversion.from),
+      editor.offsetToPos(conversion.to)
+    );
   }
 
   private handlePaste(event: ClipboardEvent): void {

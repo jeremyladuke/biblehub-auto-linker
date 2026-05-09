@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildBibleHubUrl,
   convertBibleReferences,
+  convertReferenceAtOffset,
   convertPastedText,
   convertTrailingReference,
   DEFAULT_SETTINGS
@@ -96,6 +97,26 @@ describe("paste conversion", () => {
     expect(convertPastedText("**Hebrews 12:29**\n\n> \"For our God is a consuming fire.\"", DEFAULT_SETTINGS)).toBe(
       "**[Hebrews 12:29](https://biblehub.com/hebrews/12-29.htm)**\n\n> \"For our God is a consuming fire.\""
     );
+  });
+});
+
+describe("context menu conversion", () => {
+  it("converts the reference around the cursor offset", () => {
+    expect(convertReferenceAtOffset("Try 1 Corinthians 3:11–15 today", 10, DEFAULT_SETTINGS)).toEqual({
+      from: 4,
+      to: 25,
+      replacement: "[1 Corinthians 3:11–15](https://biblehub.com/1_corinthians/3-11.htm)"
+    });
+  });
+
+  it("does not convert an already linked reference around the cursor offset", () => {
+    expect(
+      convertReferenceAtOffset(
+        "[John 3:16](https://biblehub.com/john/3-16.htm)",
+        6,
+        DEFAULT_SETTINGS
+      )
+    ).toBeNull();
   });
 });
 

@@ -151,6 +151,33 @@ export function convertPastedText(text: string, settings: BibleHubAutoLinkerSett
   return convertBibleReferences(text, settings);
 }
 
+export function convertReferenceAtOffset(
+  text: string,
+  offset: number,
+  settings: BibleHubAutoLinkerSettings
+): TrailingReferenceConversion | null {
+  const matcher = createReferenceRegex(settings);
+  const protectedRanges = collectProtectedRanges(text);
+
+  for (const match of text.matchAll(matcher)) {
+    const reference = parseReferenceMatch(match, settings);
+    if (
+      reference &&
+      offset >= reference.from &&
+      offset <= reference.to &&
+      !isProtected(reference.from, reference.to, protectedRanges)
+    ) {
+      return {
+        from: reference.from,
+        to: reference.to,
+        replacement: createMarkdownLink(reference, settings)
+      };
+    }
+  }
+
+  return null;
+}
+
 export function isRangeProtectedInMarkdown(text: string, from: number, to: number): boolean {
   return isProtected(from, to, collectProtectedRanges(text));
 }

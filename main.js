@@ -137,6 +137,21 @@ function convertPastedText(text, settings) {
   }
   return convertBibleReferences(text, settings);
 }
+function convertReferenceAtOffset(text, offset, settings) {
+  const matcher = createReferenceRegex(settings);
+  const protectedRanges = collectProtectedRanges(text);
+  for (const match of text.matchAll(matcher)) {
+    const reference = parseReferenceMatch(match, settings);
+    if (reference && offset >= reference.from && offset <= reference.to && !isProtected(reference.from, reference.to, protectedRanges)) {
+      return {
+        from: reference.from,
+        to: reference.to,
+        replacement: createMarkdownLink(reference, settings)
+      };
+    }
+  }
+  return null;
+}
 function isRangeProtectedInMarkdown(text, from, to) {
   return isProtected(from, to, collectProtectedRanges(text));
 }
@@ -287,6 +302,11 @@ var BibleHubAutoLinkerPlugin = class extends import_obsidian.Plugin {
         this.handleEditorChange(editor);
       })
     );
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu, editor) => {
+        this.handleEditorMenu(menu, editor);
+      })
+    );
     this.registerDomEvent(document, "paste", (event) => {
       this.handlePaste(event);
     });
@@ -346,6 +366,37 @@ var BibleHubAutoLinkerPlugin = class extends import_obsidian.Plugin {
     } finally {
       this.isApplyingChange = false;
     }
+  }
+  handleEditorMenu(menu, editor) {
+    menu.addItem((item) => {
+      item.setTitle("Link Bible reference").setIcon("link").onClick(() => {
+        this.convertContextReference(editor);
+      });
+    });
+  }
+  convertContextReference(editor) {
+    const selectedText = editor.getSelection();
+    if (selectedText) {
+      const converted = convertBibleReferences(selectedText, this.settings);
+      if (converted !== selectedText) {
+        editor.replaceSelection(converted);
+      } else {
+        new import_obsidian.Notice("No unlinked Bible reference found in selection.");
+      }
+      return;
+    }
+    const documentText = editor.getValue();
+    const offset = editor.posToOffset(editor.getCursor());
+    const conversion = convertReferenceAtOffset(documentText, offset, this.settings);
+    if (!conversion) {
+      new import_obsidian.Notice("No unlinked Bible reference found near the cursor.");
+      return;
+    }
+    editor.replaceRange(
+      conversion.replacement,
+      editor.offsetToPos(conversion.from),
+      editor.offsetToPos(conversion.to)
+    );
   }
   handlePaste(event) {
     var _a;
