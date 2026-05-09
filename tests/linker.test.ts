@@ -85,6 +85,12 @@ describe("paste conversion", () => {
       "[John 3:16](https://biblehub.com/john/3-16.htm)"
     );
   });
+
+  it("converts bold references in pasted verse text", () => {
+    expect(convertPastedText("**Hebrews 12:29**\n\n> \"For our God is a consuming fire.\"", DEFAULT_SETTINGS)).toBe(
+      "**[Hebrews 12:29](https://biblehub.com/hebrews/12-29.htm)**\n\n> \"For our God is a consuming fire.\""
+    );
+  });
 });
 
 describe("trailing auto-link conversion", () => {
